@@ -168,6 +168,7 @@ public class DubboBootstrap extends GenericEventListener {
     private List<CompletableFuture<Object>> asyncReferringFutures = new ArrayList<>();
 
     /**
+     * 单例模式
      * See {@link ApplicationModel} and {@link ExtensionLoader} for why DubboBootstrap is designed to be singleton.
      */
     public static synchronized DubboBootstrap getInstance() {
@@ -491,29 +492,63 @@ public class DubboBootstrap extends GenericEventListener {
     }
 
     /**
+     * 初始化
+     *
      * Initialize
      */
     private void initialize() {
+        /** 利用 CAS 只初始化一次 */
         if (!initialized.compareAndSet(false, true)) {
             return;
         }
-
+        /**
+         * 初始化框架需要的类
+         * 见 SPI 配置：org.apache.dubbo.common.context.FrameworkExt
+         * 初始化下面类
+         * config=org.apache.dubbo.config.context.ConfigManager
+         * environment=org.apache.dubbo.common.config.Environment
+         * repository=org.apache.dubbo.rpc.model.ServiceRepository
+         */
         ApplicationModel.initFrameworkExts();
 
+        /**
+         * 启动配置中心
+         */
         startConfigCenter();
 
+        /**
+         * 使用配置中心
+         */
         useRegistryAsConfigCenterIfNecessary();
 
+        /**
+         * 启动元数据
+         */
         startMetadataReport();
 
+        /**
+         * 加载远程配置
+         */
         loadRemoteConfigs();
 
+        /**
+         * 检查全局配置
+         */
         checkGlobalConfigs();
 
+        /**
+         * 初始化元数据服务
+         */
         initMetadataService();
 
+        /**
+         * 初始化 exporter 对象
+         */
         initMetadataServiceExporter();
 
+        /**
+         * 初始化事件监听器
+         */
         initEventListener();
 
         if (logger.isInfoEnabled()) {
@@ -546,18 +581,25 @@ public class DubboBootstrap extends GenericEventListener {
         ConfigValidationUtils.validateSslConfig(getSsl());
     }
 
+    /**
+     * 启动配置中心
+     */
     private void startConfigCenter() {
         Collection<ConfigCenterConfig> configCenters = configManager.getConfigCenters();
 
         if (CollectionUtils.isNotEmpty(configCenters)) {
             CompositeDynamicConfiguration compositeDynamicConfiguration = new CompositeDynamicConfiguration();
             for (ConfigCenterConfig configCenter : configCenters) {
+                /** 刷新配置中心，设置值 */
                 configCenter.refresh();
+                /** 校验配置中心的值 */
                 ConfigValidationUtils.validateConfigCenterConfig(configCenter);
+                /** 将配置中心信息配置到 environment 中 */
                 compositeDynamicConfiguration.addConfiguration(prepareEnvironment(configCenter));
             }
             environment.setDynamicConfiguration(compositeDynamicConfiguration);
         }
+        /** 刷新配置 */
         configManager.refreshAll();
     }
 
@@ -596,9 +638,13 @@ public class DubboBootstrap extends GenericEventListener {
             return;
         }
 
+        /**
+         * 支持多个配置中心
+         */
         configManager.getDefaultRegistries().stream()
                 .filter(registryConfig -> registryConfig.getUseAsConfigCenter() == null || registryConfig.getUseAsConfigCenter())
                 .forEach(registryConfig -> {
+                    /** 创建配置对象，并加到 configManager 里 */
                     String protocol = registryConfig.getProtocol();
                     String id = "config-center-" + protocol + "-" + registryConfig.getPort();
                     ConfigCenterConfig cc = new ConfigCenterConfig();
@@ -618,10 +664,17 @@ public class DubboBootstrap extends GenericEventListener {
                     cc.setHighestPriority(false);
                     configManager.addConfigCenter(cc);
                 });
+        /**
+         * 启动配置中心
+         */
         startConfigCenter();
     }
 
+    /**
+     * 加载远程配置
+     */
     private void loadRemoteConfigs() {
+        /** 加载注册配置 */
         // registry ids to registry configs
         List<RegistryConfig> tmpRegistries = new ArrayList<>();
         Set<String> registryIds = configManager.getRegistryIds();
@@ -638,6 +691,7 @@ public class DubboBootstrap extends GenericEventListener {
 
         configManager.addRegistries(tmpRegistries);
 
+        /** 加载协议配置 */
         // protocol ids to protocol configs
         List<ProtocolConfig> tmpProtocols = new ArrayList<>();
         Set<String> protocolIds = configManager.getProtocolIds();
@@ -688,14 +742,20 @@ public class DubboBootstrap extends GenericEventListener {
     }
 
     /**
+     * 容器启动后，启动发布服务和订阅服务
+     *
      * Start the bootstrap
      */
     public DubboBootstrap start() {
+        /** 使用 CAS 确认只启动一次 */
         if (started.compareAndSet(false, true)) {
+            /** 初始化 */
             initialize();
             if (logger.isInfoEnabled()) {
                 logger.info(NAME + " is starting...");
             }
+
+            /** 暴露提供的服务接口 */
             // 1. export Dubbo Services
             exportServices();
 
@@ -804,6 +864,9 @@ public class DubboBootstrap extends GenericEventListener {
     }
     /* serve for builder apis, end */
 
+    /**
+     * 根据配置中心信息设置到 environment 中
+     */
     private DynamicConfiguration prepareEnvironment(ConfigCenterConfig configCenter) {
         if (configCenter.isValid()) {
             if (!configCenter.checkOrUpdateInited()) {
@@ -861,12 +924,14 @@ public class DubboBootstrap extends GenericEventListener {
             serviceConfig.setBootstrap(this);
 
             if (exportAsync) {
+                /** 异步暴露服务 */
                 ExecutorService executor = executorRepository.getServiceExporterExecutor();
                 Future<?> future = executor.submit(() -> {
                     sc.export();
                 });
                 asyncExportingFutures.add(future);
             } else {
+                /** 同步暴露服务 */
                 sc.export();
                 exportedServices.add(sc);
             }

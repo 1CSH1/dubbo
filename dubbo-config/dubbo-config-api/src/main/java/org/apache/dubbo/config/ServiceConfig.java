@@ -179,6 +179,9 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
         dispatch(new ServiceConfigUnexportedEvent(this));
     }
 
+    /**
+     * 暴露服务
+     */
     public synchronized void export() {
         if (!shouldExport()) {
             return;
@@ -191,6 +194,7 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
 
         checkAndUpdateSubConfigs();
 
+        /** 设置属性 */
         //init serviceMetadata
         serviceMetadata.setVersion(version);
         serviceMetadata.setGroup(group);
@@ -200,6 +204,7 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
         serviceMetadata.setTarget(getRef());
 
         if (shouldDelay()) {
+            /** 延迟发布 */
             DELAY_EXPORT_EXECUTOR.schedule(this::doExport, getDelay(), TimeUnit.MILLISECONDS);
         } else {
             doExport();
@@ -271,7 +276,9 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
         appendParameters();
     }
 
-
+    /**
+     * 暴露接口
+     */
     protected synchronized void doExport() {
         if (unexported) {
             throw new IllegalStateException("The service " + interfaceClass.getName() + " has already unexported!");
@@ -290,10 +297,14 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
         dispatch(new ServiceConfigExportedEvent(this));
     }
 
+    /**
+     * 暴露服务
+     */
     @SuppressWarnings({"unchecked", "rawtypes"})
     private void doExportUrls() {
         ServiceRepository repository = ApplicationModel.getServiceRepository();
         ServiceDescriptor serviceDescriptor = repository.registerService(getInterfaceClass());
+        /** 往本地服务仓库注册提供者对象 */
         repository.registerProvider(
                 getUniqueServiceName(),
                 ref,
@@ -304,10 +315,13 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
 
         List<URL> registryURLs = ConfigValidationUtils.loadRegistries(this, true);
 
+        /** 根据不同协议暴露服务 */
         for (ProtocolConfig protocolConfig : protocols) {
+            /** 根据协议创建 pathKey */
             String pathKey = URL.buildKey(getContextPath(protocolConfig)
                     .map(p -> p + "/" + path)
                     .orElse(path), group, version);
+            /** 往本地服务仓库注册服务 */
             // In case user specified path, register service one more time to map it to path.
             repository.registerService(pathKey, interfaceClass);
             // TODO, uncomment this line once service key is unified

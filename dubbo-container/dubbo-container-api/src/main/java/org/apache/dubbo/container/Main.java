@@ -33,6 +33,8 @@ import java.util.concurrent.locks.ReentrantLock;
 import static org.apache.dubbo.common.constants.CommonConstants.COMMA_SPLIT_PATTERN;
 
 /**
+ * Dubbo 应用启动类
+ *
  * Main. (API, Static, ThreadSafe)
  *
  * This class is entry point loading containers.
@@ -51,13 +53,17 @@ public class Main {
 
     private static final Condition STOP = LOCK.newCondition();
 
+    /** 启动方法*/
     public static void main(String[] args) {
         try {
+            /** args 入参为需要启动的 Container 名称*/
             if (ArrayUtils.isEmpty(args)) {
+                /** 默认启动 Spring 容器*/
                 String config = ConfigUtils.getProperty(CONTAINER_KEY, loader.getDefaultExtensionName());
                 args = COMMA_SPLIT_PATTERN.split(config);
             }
 
+            /** 根据 args 参数加载容器 */
             final List<Container> containers = new ArrayList<Container>();
             for (int i = 0; i < args.length; i++) {
                 containers.add(loader.getExtension(args[i]));
@@ -65,9 +71,11 @@ public class Main {
             logger.info("Use container type(" + Arrays.toString(args) + ") to run dubbo serivce.");
 
             if ("true".equals(System.getProperty(SHUTDOWN_HOOK_KEY))) {
+                /** 添加关闭钩子 */
                 Runtime.getRuntime().addShutdownHook(new Thread("dubbo-container-shutdown-hook") {
                     @Override
                     public void run() {
+                        /** 在虚拟机关闭的时候，也关闭容器*/
                         for (Container container : containers) {
                             try {
                                 container.stop();
@@ -86,6 +94,7 @@ public class Main {
                 });
             }
 
+            /** 启动容器 */
             for (Container container : containers) {
                 container.start();
                 logger.info("Dubbo " + container.getClass().getSimpleName() + " started!");

@@ -461,6 +461,9 @@ public abstract class AbstractConfig implements Serializable {
         try {
             CompositeConfiguration compositeConfiguration = env.getConfiguration(getPrefix(), getId());
             Configuration config = new ConfigConfigurationAdapter(this);
+            /**
+             * 添加配置链
+             */
             if (env.isConfigCenterFirst()) {
                 // The sequence would be: SystemConfiguration -> AppExternalConfiguration -> ExternalConfiguration -> AbstractConfig -> PropertiesConfiguration
                 compositeConfiguration.addConfiguration(4, config);
@@ -469,6 +472,9 @@ public abstract class AbstractConfig implements Serializable {
                 compositeConfiguration.addConfiguration(2, config);
             }
 
+            /**
+             * 设置给配置中心对象设置值，因为有很多种配置，所以使用反射进行设置值
+             */
             // loop methods, get override value and set the new value back to method
             Method[] methods = getClass().getMethods();
             for (Method method : methods) {

@@ -35,6 +35,9 @@ import java.util.Map;
 import static org.springframework.beans.factory.BeanFactoryUtils.beansOfTypeIncludingAncestors;
 
 /**
+ * 从 2.7.5 升级了，加了 Dubbo 自定义的生命周期
+ * 该类功能：Spring 启动后会触发 Dubbo 的初始化，以及 Spring 销毁后会触发 Dubbo 销毁
+ *
  * A {@link ApplicationListener listener} for the {@link Lifecycle Dubbo Lifecycle} components
  *
  * @see {@link Lifecycle Dubbo Lifecycle}
@@ -59,10 +62,12 @@ public class DubboLifecycleComponentApplicationListener implements ApplicationLi
 
     protected void onContextRefreshedEvent(ContextRefreshedEvent event) {
         ApplicationContext context = event.getApplicationContext();
+        /** 转为 DubboBootstrap 类 */
         DubboBootstrap bootstrap = loadBootsttrapAsBean(context);
         if (bootstrap == null) {
             bootstrap = DubboBootstrap.getInstance();
         }
+        /** Dubbo 启动 */
         bootstrap.start();
     }
 

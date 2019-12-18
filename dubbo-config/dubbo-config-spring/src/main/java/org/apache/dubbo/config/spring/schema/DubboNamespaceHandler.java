@@ -44,6 +44,7 @@ import org.w3c.dom.Element;
 import static com.alibaba.spring.util.AnnotatedBeanDefinitionRegistryUtils.registerBeans;
 
 /**
+ * Dubbo 自定义 xml 配置初始化类
  * DubboNamespaceHandler
  *
  * @export
@@ -73,6 +74,7 @@ public class DubboNamespaceHandler extends NamespaceHandlerSupport implements Co
     }
 
     /**
+     * 解析 Dubbo xml 配置的 Bean
      * Override {@link NamespaceHandlerSupport#parse(Element, ParserContext)} method
      *
      * @param element       {@link Element}
@@ -91,6 +93,7 @@ public class DubboNamespaceHandler extends NamespaceHandlerSupport implements Co
     }
 
     /**
+     * 注册 Spring 监听类
      * Register {@link DubboLifecycleComponentApplicationListener} as a Spring Bean
      *
      * @param registry {@link BeanDefinitionRegistry}
@@ -103,6 +106,7 @@ public class DubboNamespaceHandler extends NamespaceHandlerSupport implements Co
     }
 
     /**
+     * 设置使用 Spring 注解
      * Register the processors for the Spring Annotation-Driven features
      *
      * @param registry {@link BeanDefinitionRegistry}

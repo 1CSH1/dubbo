@@ -42,6 +42,7 @@ public class SpringContainer implements Container {
 
     @Override
     public void start() {
+        /** 启动 Spring */
         String configPath = ConfigUtils.getProperty(SPRING_CONFIG);
         if (StringUtils.isEmpty(configPath)) {
             configPath = DEFAULT_SPRING_CONFIG;

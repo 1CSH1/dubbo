@@ -57,6 +57,7 @@ import static com.alibaba.spring.util.BeanRegistrar.registerInfrastructureBean;
 import static org.apache.dubbo.common.constants.CommonConstants.HIDE_KEY_PREFIX;
 
 /**
+ * Dubbo 自定义的 xml Bean 解析器类
  * AbstractBeanDefinitionParser
  *
  * @export

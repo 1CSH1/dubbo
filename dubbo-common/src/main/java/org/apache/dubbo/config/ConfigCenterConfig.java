@@ -35,6 +35,7 @@ import static org.apache.dubbo.config.Constants.CONFIG_APP_CONFIGFILE_KEY;
 import static org.apache.dubbo.config.Constants.ZOOKEEPER_PROTOCOL;
 
 /**
+ * 配置中心配置信息类
  * ConfigCenterConfig
  */
 public class ConfigCenterConfig extends AbstractConfig {
