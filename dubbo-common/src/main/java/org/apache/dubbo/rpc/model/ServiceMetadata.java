@@ -35,6 +35,7 @@ public class ServiceMetadata extends ServiceDescriptor {
 
     private Object target;
 
+    /** 会送到远程的参数 */
     /* will be transferred to remote side */
     private final Map<String, Object> attachments = new ConcurrentHashMap<String, Object>();
     /* used locally*/

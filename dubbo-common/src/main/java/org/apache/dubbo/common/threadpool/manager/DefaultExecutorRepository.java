@@ -104,6 +104,11 @@ public class DefaultExecutorRepository implements ExecutorRepository {
         return executor;
     }
 
+    /**
+     * 更新线程池参数
+     * @param url
+     * @param executor
+     */
     @Override
     public void updateThreadpool(URL url, ExecutorService executor) {
         try {

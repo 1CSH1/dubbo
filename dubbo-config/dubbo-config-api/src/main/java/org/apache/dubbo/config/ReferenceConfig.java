@@ -116,6 +116,7 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
     private static final ProxyFactory PROXY_FACTORY = ExtensionLoader.getExtensionLoader(ProxyFactory.class).getAdaptiveExtension();
 
     /**
+     * 代理接口的引用
      * The interface proxy reference
      */
     private transient volatile T ref;
@@ -154,6 +155,7 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
             throw new IllegalStateException("The invoker of ReferenceConfig(" + url + ") has already destroyed!");
         }
         if (ref == null) {
+            /** 初始化引用对象 */
             init();
         }
         return ref;
@@ -179,6 +181,9 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
         dispatch(new ReferenceConfigDestroyedEvent(this));
     }
 
+    /**
+     * 服务引用初始化
+     */
     public synchronized void init() {
         if (initialized) {
             return;
@@ -250,6 +255,7 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
 
         serviceMetadata.getAttachments().putAll(map);
 
+        /** 创建代理对象 */
         ref = createProxy(map);
 
         serviceMetadata.setTarget(ref);
@@ -260,21 +266,30 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
 
         initialized = true;
 
+        /** 分发事件 */
         // dispatch a ReferenceConfigInitializedEvent since 2.7.4
         dispatch(new ReferenceConfigInitializedEvent(this, invoker));
     }
 
+    /**
+     * 创建引用服务的代理类
+     * @param map
+     * @return
+     */
     @SuppressWarnings({"unchecked", "rawtypes", "deprecation"})
     private T createProxy(Map<String, String> map) {
         if (shouldJvmRefer(map)) {
+            /** 本地调用 */
             URL url = new URL(LOCAL_PROTOCOL, LOCALHOST_VALUE, 0, interfaceClass.getName()).addParameters(map);
             invoker = REF_PROTOCOL.refer(interfaceClass, url);
             if (logger.isInfoEnabled()) {
                 logger.info("Using injvm service " + interfaceClass.getName());
             }
         } else {
+            /** 远程调用 */
             urls.clear();
             if (url != null && url.length() > 0) { // user specified URL, could be peer-to-peer address, or register center's address.
+                /** 指定调用的 url  */
                 String[] us = SEMICOLON_SPLIT_PATTERN.split(url);
                 if (us != null && us.length > 0) {
                     for (String u : us) {
@@ -283,16 +298,21 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
                             url = url.setPath(interfaceName);
                         }
                         if (UrlUtils.isRegistry(url)) {
+                            /** 已经注册的 url 直接新增到 urls */
                             urls.add(url.addParameterAndEncoded(REFER_KEY, StringUtils.toQueryString(map)));
                         } else {
+                            /** 未注册的则 merge 到集群里，再新增到 urls */
                             urls.add(ClusterUtils.mergeUrl(url, map));
                         }
                     }
                 }
             } else { // assemble URL from register center's configuration
                 // if protocols not injvm checkRegistry
+                /** 从注册中心拉取 url */
                 if (!LOCAL_PROTOCOL.equalsIgnoreCase(getProtocol())) {
+                    /** 检查注册中心是否正常 */
                     checkRegistry();
+                    /** 从配置中心拉取 url*/
                     List<URL> us = ConfigValidationUtils.loadRegistries(this, false);
                     if (CollectionUtils.isNotEmpty(us)) {
                         for (URL u : us) {
@@ -304,22 +324,27 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
                         }
                     }
                     if (urls.isEmpty()) {
+                        /** 没有拉取到则报错 */
                         throw new IllegalStateException("No such any registry to reference " + interfaceName + " on the consumer " + NetUtils.getLocalHost() + " use dubbo version " + Version.getVersion() + ", please config <dubbo:registry address=\"...\" /> to your spring config.");
                     }
                 }
             }
 
             if (urls.size() == 1) {
+                /** 只有一个提供者，则直接关联上 */
                 invoker = REF_PROTOCOL.refer(interfaceClass, urls.get(0));
             } else {
+                /** 多个提供者，则需要走集群 */
                 List<Invoker<?>> invokers = new ArrayList<Invoker<?>>();
                 URL registryURL = null;
                 for (URL url : urls) {
                     invokers.add(REF_PROTOCOL.refer(interfaceClass, url));
                     if (UrlUtils.isRegistry(url)) {
+                        /** 使用最后一个已经注册的 url */
                         registryURL = url; // use last registry url
                     }
                 }
+                /** 加入集群 */
                 if (registryURL != null) { // registry url is available
                     // for multi-subscription scenario, use 'zone-aware' policy by default
                     URL u = registryURL.addParameterIfAbsent(CLUSTER_KEY, ZoneAwareCluster.NAME);
@@ -356,6 +381,7 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
             URL consumerURL = new URL(CONSUMER_PROTOCOL, map.remove(REGISTER_IP_KEY), 0, map.get(INTERFACE_KEY), map);
             metadataService.publishServiceDefinition(consumerURL);
         }
+        /** 通过代理工厂在包装成代理对象 */
         // create service proxy
         return (T) PROXY_FACTORY.getProxy(invoker);
     }

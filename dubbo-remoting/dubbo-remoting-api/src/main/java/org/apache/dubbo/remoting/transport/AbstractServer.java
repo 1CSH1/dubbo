@@ -64,10 +64,12 @@ public abstract class AbstractServer extends AbstractEndpoint implements Remotin
         if (url.getParameter(ANYHOST_KEY, false) || NetUtils.isInvalidLocalHost(bindIp)) {
             bindIp = ANYHOST_VALUE;
         }
+        /** 创建绑定地址 */
         bindAddress = new InetSocketAddress(bindIp, bindPort);
         this.accepts = url.getParameter(ACCEPTS_KEY, DEFAULT_ACCEPTS);
         this.idleTimeout = url.getParameter(IDLE_TIMEOUT_KEY, DEFAULT_IDLE_TIMEOUT);
         try {
+            /** 打开 Server */
             doOpen();
             if (logger.isInfoEnabled()) {
                 logger.info("Start " + getClass().getSimpleName() + " bind " + getBindAddress() + ", export " + getLocalAddress());
@@ -79,16 +81,25 @@ public abstract class AbstractServer extends AbstractEndpoint implements Remotin
         executor = executorRepository.createExecutorIfAbsent(url);
     }
 
+    /**
+     * 模板方法模式
+     * @throws Throwable
+     */
     protected abstract void doOpen() throws Throwable;
 
     protected abstract void doClose() throws Throwable;
 
+    /**
+     * 重置 URL
+     * @param url
+     */
     @Override
     public void reset(URL url) {
         if (url == null) {
             return;
         }
         try {
+            /** 更新 accepts 字段 */
             if (url.hasParameter(ACCEPTS_KEY)) {
                 int a = url.getParameter(ACCEPTS_KEY, 0);
                 if (a > 0) {
@@ -99,6 +110,7 @@ public abstract class AbstractServer extends AbstractEndpoint implements Remotin
             logger.error(t.getMessage(), t);
         }
         try {
+            /** 更新 idle.timeout 字段*/
             if (url.hasParameter(IDLE_TIMEOUT_KEY)) {
                 int t = url.getParameter(IDLE_TIMEOUT_KEY, 0);
                 if (t > 0) {
@@ -108,6 +120,7 @@ public abstract class AbstractServer extends AbstractEndpoint implements Remotin
         } catch (Throwable t) {
             logger.error(t.getMessage(), t);
         }
+        /** 更新线程池参数 */
         executorRepository.updateThreadpool(url, executor);
         super.setUrl(getUrl().addParameters(url.getParameters()));
     }

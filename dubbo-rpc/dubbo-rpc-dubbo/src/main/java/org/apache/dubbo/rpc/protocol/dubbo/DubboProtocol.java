@@ -277,12 +277,20 @@ public class DubboProtocol extends AbstractProtocol {
         return DEFAULT_PORT;
     }
 
+    /**
+     * Dubbo 协议暴露接口
+     * @param invoker Service invoker
+     * @param <T>
+     * @return
+     * @throws RpcException
+     */
     @Override
     public <T> Exporter<T> export(Invoker<T> invoker) throws RpcException {
         URL url = invoker.getUrl();
 
         // export service.
         String key = serviceKey(url);
+        /** 封装成 DubboExporter */
         DubboExporter<T> exporter = new DubboExporter<T>(invoker, key, exporterMap);
         exporterMap.put(key, exporter);
 
@@ -302,7 +310,9 @@ public class DubboProtocol extends AbstractProtocol {
             }
         }
 
+        /** 打开服务 */
         openServer(url);
+        /** 序列化 */
         optimizeSerialization(url);
 
         return exporter;
@@ -316,20 +326,29 @@ public class DubboProtocol extends AbstractProtocol {
         if (isServer) {
             ProtocolServer server = serverMap.get(key);
             if (server == null) {
+                /** server 不存在，新建一个 server */
                 synchronized (this) {
                     server = serverMap.get(key);
                     if (server == null) {
+                        /** 创建服务 */
                         serverMap.put(key, createServer(url));
                     }
                 }
             } else {
+                /** server 已经存在，更新 url 进行重置 */
                 // server supports reset, use together with override
                 server.reset(url);
             }
         }
     }
 
+    /**
+     * 新建 server
+     * @param url
+     * @return
+     */
     private ProtocolServer createServer(URL url) {
+        /** 组装 url */
         url = URLBuilder.from(url)
                 // send readonly event when server closes, it's enabled by default
                 .addParameterIfAbsent(CHANNEL_READONLYEVENT_SENT_KEY, Boolean.TRUE.toString())
@@ -345,11 +364,13 @@ public class DubboProtocol extends AbstractProtocol {
 
         ExchangeServer server;
         try {
+            /** 创建 server */
             server = Exchangers.bind(url, requestHandler);
         } catch (RemotingException e) {
             throw new RpcException("Fail to start server(url: " + url + ") " + e.getMessage(), e);
         }
 
+        /** 检查网络传输的方式是否支持 */
         str = url.getParameter(CLIENT_KEY);
         if (str != null && str.length() > 0) {
             Set<String> supportedTypes = ExtensionLoader.getExtensionLoader(Transporter.class).getSupportedExtensions();

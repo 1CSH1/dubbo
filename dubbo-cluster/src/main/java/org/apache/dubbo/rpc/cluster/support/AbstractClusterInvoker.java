@@ -146,6 +146,7 @@ public abstract class AbstractClusterInvoker<T> implements Invoker<T> {
             }
         }
 
+        /** 负载均衡选中服务 */
         Invoker<T> invoker = doSelect(loadbalance, invocation, invokers, selected);
 
         if (sticky) {
@@ -165,6 +166,7 @@ public abstract class AbstractClusterInvoker<T> implements Invoker<T> {
         }
         Invoker<T> invoker = loadbalance.select(invokers, getUrl(), invocation);
 
+        /** 重选 */
         //If the `invoker` is in the  `selected` or invoker is unavailable && availablecheck is true, reselect.
         if ((selected != null && selected.contains(invoker))
                 || (!invoker.isAvailable() && getUrl() != null && availablecheck)) {
@@ -239,19 +241,30 @@ public abstract class AbstractClusterInvoker<T> implements Invoker<T> {
         return null;
     }
 
+    /**
+     * 通过集群调用
+     * @param invocation
+     * @return
+     * @throws RpcException
+     */
     @Override
     public Result invoke(final Invocation invocation) throws RpcException {
+        /** 检查当前应用是否销毁 */
         checkWhetherDestroyed();
 
+        /** 把 attachments 传递过去 */
         // binding attachments into invocation.
         Map<String, Object> contextAttachments = RpcContext.getContext().getAttachments();
         if (contextAttachments != null && contextAttachments.size() != 0) {
             ((RpcInvocation) invocation).addAttachments(contextAttachments);
         }
 
+        /** 获取提供者列表 */
         List<Invoker<T>> invokers = list(invocation);
+        /** 初始化负载均衡器 */
         LoadBalance loadbalance = initLoadBalance(invokers, invocation);
         RpcUtils.attachInvocationIdIfAsync(getUrl(), invocation);
+        /** 调用服务 */
         return doInvoke(invocation, invokers, loadbalance);
     }
 

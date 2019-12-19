@@ -761,12 +761,15 @@ public class DubboBootstrap extends GenericEventListener {
 
             // Not only provider register
             if (!isOnlyRegisterProvider() || hasExportedServices()) {
+                /** 暴露 元数据服务 */
                 // 2. export MetadataService
                 exportMetadataService();
+                /** 注册服务到注册中心 */
                 //3. Register the local ServiceInstance if required
                 registerServiceInstance();
             }
 
+            /** 订阅消费服务 */
             referServices();
 
             if (logger.isInfoEnabled()) {
@@ -919,6 +922,7 @@ public class DubboBootstrap extends GenericEventListener {
 
     private void exportServices() {
         configManager.getServices().forEach(sc -> {
+            /** 一个接口一个接口发布 */
             // TODO, compatible with ServiceConfig.export()
             ServiceConfig serviceConfig = (ServiceConfig) sc;
             serviceConfig.setBootstrap(this);
@@ -953,11 +957,17 @@ public class DubboBootstrap extends GenericEventListener {
         exportedServices.clear();
     }
 
+    /**
+     * 订阅消费的服务
+     */
     private void referServices() {
         if (cache == null) {
             cache = ReferenceConfigCache.getCache();
         }
 
+        /**
+         * 遍历配置的所有消费的服务
+         */
         configManager.getReferences().forEach(rc -> {
             // TODO, compatible with  ReferenceConfig.refer()
             ReferenceConfig referenceConfig = (ReferenceConfig) rc;
@@ -965,12 +975,14 @@ public class DubboBootstrap extends GenericEventListener {
 
             if (rc.shouldInit()) {
                 if (referAsync) {
+                    /** 异步订阅 */
                     CompletableFuture<Object> future = ScheduledCompletableFuture.submit(
                             executorRepository.getServiceExporterExecutor(),
                             () -> cache.get(rc)
                     );
                     asyncReferringFutures.add(future);
                 } else {
+                    /** 同步订阅 */
                     cache.get(rc);
                 }
             }
@@ -991,6 +1003,9 @@ public class DubboBootstrap extends GenericEventListener {
         cache.destroyAll();
     }
 
+    /**
+     * 服务注册到注册中心
+     */
     private void registerServiceInstance() {
         if (CollectionUtils.isEmpty(getServiceDiscoveries())) {
             return;
@@ -1006,8 +1021,9 @@ public class DubboBootstrap extends GenericEventListener {
 
         int port = exportedURL.getPort();
 
+        /** 创建服务实例 */
         ServiceInstance serviceInstance = createServiceInstance(serviceName, host, port);
-
+        /** 将服务注册到注册中心 */
         getServiceDiscoveries().forEach(serviceDiscovery -> serviceDiscovery.register(serviceInstance));
     }
 

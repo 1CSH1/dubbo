@@ -52,6 +52,7 @@ import static org.apache.dubbo.common.constants.CommonConstants.IO_THREADS_KEY;
 import static org.apache.dubbo.common.constants.CommonConstants.SSL_ENABLED_KEY;
 
 /**
+ * 使用 Netty 作为网络通讯，服务端
  * NettyServer.
  */
 public class NettyServer extends AbstractServer implements RemotingServer {
