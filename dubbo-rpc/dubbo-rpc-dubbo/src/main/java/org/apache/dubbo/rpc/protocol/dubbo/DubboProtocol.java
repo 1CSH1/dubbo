@@ -112,6 +112,13 @@ public class DubboProtocol extends AbstractProtocol {
 
     private ExchangeHandler requestHandler = new ExchangeHandlerAdapter() {
 
+        /**
+         * 处理请求
+         * @param channel
+         * @param message
+         * @return
+         * @throws RemotingException
+         */
         @Override
         public CompletableFuture<Object> reply(ExchangeChannel channel, Object message) throws RemotingException {
 
@@ -122,10 +129,13 @@ public class DubboProtocol extends AbstractProtocol {
             }
 
             Invocation inv = (Invocation) message;
+            /** 获取 Invoker 调用对象 */
             Invoker<?> invoker = getInvoker(channel, inv);
+            /** 检查 */
             // need to consider backward-compatibility if it's a callback
             if (Boolean.TRUE.toString().equals(inv.getAttachments().get(IS_CALLBACK_SERVICE_INVOKE))) {
                 String methodsStr = invoker.getUrl().getParameters().get("methods");
+                /** 检查是否有要执行的方法 */
                 boolean hasMethod = false;
                 if (methodsStr == null || !methodsStr.contains(",")) {
                     hasMethod = inv.getMethodName().equals(methodsStr);
@@ -138,6 +148,7 @@ public class DubboProtocol extends AbstractProtocol {
                         }
                     }
                 }
+                /** 没有方法则报错 */
                 if (!hasMethod) {
                     logger.warn(new IllegalStateException("The methodName " + inv.getMethodName()
                             + " not found in callback service interface ,invoke will be ignored."
@@ -147,6 +158,7 @@ public class DubboProtocol extends AbstractProtocol {
                 }
             }
             RpcContext.getContext().setRemoteAddress(channel.getRemoteAddress());
+            /** 调用 */
             Result result = invoker.invoke(inv);
             return result.thenApply(Function.identity());
         }
@@ -238,6 +250,13 @@ public class DubboProtocol extends AbstractProtocol {
                         .equals(NetUtils.filterLocalHost(address.getAddress().getHostAddress()));
     }
 
+    /**
+     * 获取 invoker 对象
+     * @param channel
+     * @param inv
+     * @return
+     * @throws RemotingException
+     */
     Invoker<?> getInvoker(Channel channel, Invocation inv) throws RemotingException {
         boolean isCallBackServiceInvoke = false;
         boolean isStubServiceInvoke = false;
@@ -257,7 +276,9 @@ public class DubboProtocol extends AbstractProtocol {
             inv.getAttachments().put(IS_CALLBACK_SERVICE_INVOKE, Boolean.TRUE.toString());
         }
 
+        /** 通过协议获取服务唯一值 key */
         String serviceKey = serviceKey(port, path, (String) inv.getAttachments().get(VERSION_KEY), (String) inv.getAttachments().get(GROUP_KEY));
+        /** 获取暴露的接口 */
         DubboExporter<?> exporter = (DubboExporter<?>) exporterMap.get(serviceKey);
 
         if (exporter == null) {

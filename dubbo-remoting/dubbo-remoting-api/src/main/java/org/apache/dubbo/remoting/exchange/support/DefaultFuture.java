@@ -120,9 +120,15 @@ public class DefaultFuture extends CompletableFuture<Object> {
         return CHANNELS.containsValue(channel);
     }
 
+    /**
+     * 发送请求
+     * @param channel
+     * @param request
+     */
     public static void sent(Channel channel, Request request) {
         DefaultFuture future = FUTURES.get(request.getId());
         if (future != null) {
+            /** 记录发送时间 */
             future.doSent();
         }
     }
@@ -154,6 +160,12 @@ public class DefaultFuture extends CompletableFuture<Object> {
         received(channel, response, false);
     }
 
+    /**
+     * 接收处理请求
+     * @param channel
+     * @param response
+     * @param timeout
+     */
     public static void received(Channel channel, Response response, boolean timeout) {
         try {
             DefaultFuture future = FUTURES.remove(response.getId());

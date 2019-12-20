@@ -78,12 +78,21 @@ public abstract class AbstractProxyInvoker<T> implements Invoker<T> {
     public void destroy() {
     }
 
+    /**
+     * 本地调用
+     * @param invocation
+     * @return
+     * @throws RpcException
+     */
     @Override
     public Result invoke(Invocation invocation) throws RpcException {
         try {
+            /** 通过代理调用 */
             Object value = doInvoke(proxy, invocation.getMethodName(), invocation.getParameterTypes(), invocation.getArguments());
+            /** 组装返回 Result 对象 */
             CompletableFuture<Object> future = wrapWithFuture(value, invocation);
             CompletableFuture<AppResponse> appResponseFuture = future.handle((obj, t) -> {
+                /** 组装返回对象 */
                 AppResponse result = new AppResponse();
                 if (t != null) {
                     if (t instanceof CompletionException) {

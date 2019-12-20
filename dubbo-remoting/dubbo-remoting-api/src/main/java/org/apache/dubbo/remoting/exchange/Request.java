@@ -23,6 +23,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import static org.apache.dubbo.common.constants.CommonConstants.HEARTBEAT_EVENT;
 
 /**
+ * 请求报文
+ *
  * Request.
  */
 public class Request {

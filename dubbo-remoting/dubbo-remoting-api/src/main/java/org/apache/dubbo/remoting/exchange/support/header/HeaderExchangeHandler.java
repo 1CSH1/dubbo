@@ -75,9 +75,17 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
         }
     }
 
+    /**
+     * 处理请求
+     * @param channel
+     * @param req
+     * @throws RemotingException
+     */
     void handleRequest(final ExchangeChannel channel, Request req) throws RemotingException {
+        /** 创建返回报文 */
         Response res = new Response(req.getId(), req.getVersion());
         if (req.isBroken()) {
+            /** 请求报文解码出问题了 */
             Object data = req.getData();
 
             String msg;
@@ -90,14 +98,16 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
             }
             res.setErrorMessage("Fail to decode request due to: " + msg);
             res.setStatus(Response.BAD_REQUEST);
-
+            /** 返回结果 */
             channel.send(res);
             return;
         }
         // find handler by message class.
         Object msg = req.getData();
         try {
+            /** 转发到不同协议处理 */
             CompletionStage<Object> future = handler.reply(channel, msg);
+            /** 阻塞等待完成调用后返回结果 */
             future.whenComplete((appResult, t) -> {
                 try {
                     if (t == null) {
@@ -107,6 +117,7 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
                         res.setStatus(Response.SERVICE_ERROR);
                         res.setErrorMessage(StringUtils.toString(t));
                     }
+                    /** 发送结果 */
                     channel.send(res);
                 } catch (RemotingException e) {
                     logger.warn("Send result to consumer failed, channel is " + channel + ", msg is " + e);
@@ -115,6 +126,7 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
         } catch (Throwable e) {
             res.setStatus(Response.SERVICE_ERROR);
             res.setErrorMessage(StringUtils.toString(e));
+            /** 异常则返回异常结果 */
             channel.send(res);
         }
     }
@@ -136,6 +148,12 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
         }
     }
 
+    /**
+     * 发送请求
+     * @param channel channel.
+     * @param message message.
+     * @throws RemotingException
+     */
     @Override
     public void sent(Channel channel, Object message) throws RemotingException {
         Throwable exception = null;
@@ -146,10 +164,13 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
             exception = t;
             HeaderExchangeChannel.removeChannelIfDisconnected(channel);
         }
+        /** 消息是请求包，则存入 */
         if (message instanceof Request) {
             Request request = (Request) message;
             DefaultFuture.sent(channel, request);
         }
+
+        /** 处理异常 */
         if (exception != null) {
             if (exception instanceof RuntimeException) {
                 throw (RuntimeException) exception;
@@ -166,30 +187,38 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
     public void received(Channel channel, Object message) throws RemotingException {
         final ExchangeChannel exchangeChannel = HeaderExchangeChannel.getOrAddChannel(channel);
         if (message instanceof Request) {
+            /** 处理发送请求 */
             // handle request.
             Request request = (Request) message;
             if (request.isEvent()) {
+                /** 处理事件请求 */
                 handlerEvent(channel, request);
             } else {
                 if (request.isTwoWay()) {
+                    /** 处理双向的请求，也就是需要返回报文 */
                     handleRequest(exchangeChannel, request);
                 } else {
+                    /** 处理单向的请求 */
                     handler.received(exchangeChannel, request.getData());
                 }
             }
         } else if (message instanceof Response) {
+            /** 处理返回报文 */
             handleResponse(channel, (Response) message);
         } else if (message instanceof String) {
+            /** 处理 String 类型的返回值 */
             if (isClientSide(channel)) {
                 Exception e = new Exception("Dubbo client can not supported string message: " + message + " in channel: " + channel + ", url: " + channel.getUrl());
                 logger.error(e.getMessage(), e);
             } else {
+                /** 接收到 telnet  */
                 String echo = handler.telnet(channel, (String) message);
                 if (echo != null && echo.length() > 0) {
                     channel.send(echo);
                 }
             }
         } else {
+            /** 处理其他的 */
             handler.received(exchangeChannel, message);
         }
     }

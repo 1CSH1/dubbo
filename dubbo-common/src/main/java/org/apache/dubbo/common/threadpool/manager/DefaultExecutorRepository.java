@@ -37,6 +37,8 @@ import static org.apache.dubbo.common.constants.CommonConstants.SIDE_KEY;
 import static org.apache.dubbo.common.constants.CommonConstants.THREADS_KEY;
 
 /**
+ * 默认的线程池仓库
+ *
  * Consider implementing {@code Licycle} to enable executors shutdown when the process stops.
  */
 public class DefaultExecutorRepository implements ExecutorRepository {
