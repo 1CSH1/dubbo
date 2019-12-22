@@ -333,7 +333,7 @@ public class DubboProtocol extends AbstractProtocol {
 
         /** 打开服务 */
         openServer(url);
-        /** 序列化 */
+        /** 优化序列化 */
         optimizeSerialization(url);
 
         return exporter;

@@ -194,7 +194,7 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
 
         checkAndUpdateSubConfigs();
 
-        /** 设置属性 */
+        /** 设置元数据 */
         //init serviceMetadata
         serviceMetadata.setVersion(version);
         serviceMetadata.setGroup(group);
@@ -317,6 +317,7 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
                 serviceMetadata
         );
 
+        /** 检查并获取注册中心 registries ，Dubbo 支持多注册中心 */
         List<URL> registryURLs = ConfigValidationUtils.loadRegistries(this, true);
 
         /** 根据不同协议暴露服务 */
@@ -328,6 +329,7 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
             /** 往本地服务仓库注册服务 */
             // In case user specified path, register service one more time to map it to path.
             repository.registerService(pathKey, interfaceClass);
+            /** 设置元数据的 serviceKey */
             // TODO, uncomment this line once service key is unified
             serviceMetadata.setServiceKey(pathKey);
             /** 暴露服务 */
@@ -460,6 +462,7 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
 
             // export to local if the config is not remote (export to remote only when config is remote)
             if (!SCOPE_REMOTE.equalsIgnoreCase(scope)) {
+                /** 暴露到本地 */
                 exportLocal(url);
             }
             // export to remote if the config is not local (export to local only when config is local)
