@@ -36,11 +36,20 @@ public class HeaderExchanger implements Exchanger {
 
     @Override
     public ExchangeClient connect(URL url, ExchangeHandler handler) throws RemotingException {
+        /**
+         * 创建客户端连接
+         */
         return new HeaderExchangeClient(Transporters.connect(url, new DecodeHandler(new HeaderExchangeHandler(handler))), true);
     }
 
     @Override
     public ExchangeServer bind(URL url, ExchangeHandler handler) throws RemotingException {
+        /**
+         * HeaderExchangeHandler 请求处理类
+         * DecodeHandler 解码处理类
+         * Transporters.bind 创建对应的网络通讯服务，比如 NettyServer
+         * HeaderExchangeServer 封装成统一的 HeaderExchangeServer
+         */
         return new HeaderExchangeServer(Transporters.bind(url, new DecodeHandler(new HeaderExchangeHandler(handler))));
     }
 

@@ -32,11 +32,13 @@ public class NettyTransporter implements Transporter {
 
     @Override
     public RemotingServer bind(URL url, ChannelHandler listener) throws RemotingException {
+        /** 创建服务端 */
         return new NettyServer(url, listener);
     }
 
     @Override
     public Client connect(URL url, ChannelHandler listener) throws RemotingException {
+        /** 创建客户端 */
         return new NettyClient(url, listener);
     }
 

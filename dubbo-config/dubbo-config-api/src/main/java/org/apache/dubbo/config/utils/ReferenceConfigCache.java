@@ -102,6 +102,12 @@ public class ReferenceConfigCache {
         return CACHE_HOLDER.computeIfAbsent(name, k -> new ReferenceConfigCache(k, keyGenerator));
     }
 
+    /**
+     *
+     * @param referenceConfig
+     * @param <T>
+     * @return
+     */
     @SuppressWarnings("unchecked")
     public <T> T get(ReferenceConfigBase<T> referenceConfig) {
         String key = generator.generateKey(referenceConfig);
@@ -111,6 +117,7 @@ public class ReferenceConfigCache {
 
         ConcurrentMap<String, Object> proxiesOfType = proxies.get(type);
         proxiesOfType.computeIfAbsent(key, _k -> {
+            /** 获取 reference 的代理对象 */
             Object proxy = referenceConfig.get();
             referredReferences.put(key, referenceConfig);
             return proxy;
