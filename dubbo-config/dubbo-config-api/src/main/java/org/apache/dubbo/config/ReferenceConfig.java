@@ -331,13 +331,14 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
             }
 
             if (urls.size() == 1) {
-                /** 只有一个提供者，则直接关联上 */
+                /** 只有一个注册中心，创建 invoker 对象 */
                 invoker = REF_PROTOCOL.refer(interfaceClass, urls.get(0));
             } else {
-                /** 多个提供者，则需要走集群 */
+                /** 多个注册中心，则需要创建不同注册中心的 invoker 对象 */
                 List<Invoker<?>> invokers = new ArrayList<Invoker<?>>();
                 URL registryURL = null;
                 for (URL url : urls) {
+                    /** 根据不同的注册中心生成对应的 invoker */
                     invokers.add(REF_PROTOCOL.refer(interfaceClass, url));
                     if (UrlUtils.isRegistry(url)) {
                         /** 使用最后一个已经注册的 url */

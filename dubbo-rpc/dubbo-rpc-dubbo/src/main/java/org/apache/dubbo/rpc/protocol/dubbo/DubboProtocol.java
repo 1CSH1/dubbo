@@ -440,10 +440,20 @@ public class DubboProtocol extends AbstractProtocol {
         }
     }
 
+    /**
+     * 通过 Dubbo 协议绑定 refer
+     * @param serviceType
+     * @param url
+     * @param <T>
+     * @return
+     * @throws RpcException
+     */
     @Override
     public <T> Invoker<T> protocolBindingRefer(Class<T> serviceType, URL url) throws RpcException {
+        /** 序列化优化 */
         optimizeSerialization(url);
 
+        /** 创建 DubboInvoker 对象 */
         // create rpc invoker.
         DubboInvoker<T> invoker = new DubboInvoker<T>(serviceType, url, getClients(url), invokers);
         invokers.add(invoker);

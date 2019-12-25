@@ -59,15 +59,18 @@ public class NettyServer extends AbstractServer implements RemotingServer {
 
     private static final Logger logger = LoggerFactory.getLogger(NettyServer.class);
     /**
+     * 缓存 channel
      * the cache for alive worker channel.
      * <ip:port, dubbo channel>
      */
     private Map<String, Channel> channels;
     /**
+     *
      * netty server bootstrap.
      */
     private ServerBootstrap bootstrap;
     /**
+     * 负责接收连接请求，并分发到各个工作 channel
      * the boss channel that receive connections and dispatch these to worker channel.
      */
 	private io.netty.channel.Channel channel;
@@ -88,18 +91,23 @@ public class NettyServer extends AbstractServer implements RemotingServer {
      */
     @Override
     protected void doOpen() throws Throwable {
+        /** 创建服务端的启动服务对象 */
         bootstrap = new ServerBootstrap();
 
+        /** 负责处理连接的线程组 只有 1 个线程 */
         bossGroup = new NioEventLoopGroup(1, new DefaultThreadFactory("NettyServerBoss", true));
+        /** 工作线程组 */
         workerGroup = new NioEventLoopGroup(getUrl().getPositiveParameter(IO_THREADS_KEY, Constants.DEFAULT_IO_THREADS),
                 new DefaultThreadFactory("NettyServerWorker", true));
 
+        /** 服务端处理类 */
         final NettyServerHandler nettyServerHandler = new NettyServerHandler(getUrl(), this);
         channels = nettyServerHandler.getChannels();
 
         bootstrap.group(bossGroup, workerGroup)
                 .channel(NioServerSocketChannel.class)
                 .option(ChannelOption.SO_REUSEADDR, Boolean.TRUE)
+                /** 不延迟 */
                 .childOption(ChannelOption.TCP_NODELAY, Boolean.TRUE)
                 .childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
                 .childHandler(new ChannelInitializer<NioSocketChannel>() {

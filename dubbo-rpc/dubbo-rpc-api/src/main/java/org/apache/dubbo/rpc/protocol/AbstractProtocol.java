@@ -102,8 +102,17 @@ public abstract class AbstractProtocol implements Protocol {
         }
     }
 
+    /**
+     * 订阅服务引用
+     * @param type Service class
+     * @param url  URL address for the remote service
+     * @param <T>
+     * @return
+     * @throws RpcException
+     */
     @Override
     public <T> Invoker<T> refer(Class<T> type, URL url) throws RpcException {
+        /** 创建 Invoker 对象 */
         return new AsyncToSyncInvoker<>(protocolBindingRefer(type, url));
     }
 
