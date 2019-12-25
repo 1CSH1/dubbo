@@ -165,6 +165,10 @@ public class ZookeeperServiceDiscovery implements ServiceDiscovery, EventListene
         return execute(serviceDiscovery, function);
     }
 
+    /**
+     * 重新注册监听器
+     * @param serviceName
+     */
     protected void registerServiceWatcher(String serviceName) {
         String path = buildServicePath(serviceName);
         CuratorWatcher watcher = watcherCaches.computeIfAbsent(path, key ->
@@ -185,9 +189,13 @@ public class ZookeeperServiceDiscovery implements ServiceDiscovery, EventListene
         return rootPath + "/" + serviceName;
     }
 
+    /**
+     *  处理节点变化逻辑
+     */
     @Override
     public void onEvent(ServiceInstancesChangedEvent event) {
         String serviceName = event.getServiceName();
+        /** 重新注册监听器 */
         // re-register again
         registerServiceWatcher(serviceName);
     }

@@ -83,14 +83,17 @@ public class ZookeeperRegistry extends FailbackRegistry {
         }
         this.root = group;
         zkClient = zookeeperTransporter.connect(url);
+        /** 添加状态监听器 */
         zkClient.addStateListener((state) -> {
             if (state == StateListener.RECONNECTED) {
                 logger.warn("Trying to fetch the latest urls, in case there're provider changes during connection loss.\n" +
                         " Since ephemeral ZNode will not get deleted for a connection lose, " +
                         "there's no need to re-register url of this instance.");
+                /** 重连则重新拉取最新的地址 */
                 ZookeeperRegistry.this.fetchLatestAddresses();
             } else if (state == StateListener.NEW_SESSION_CREATED) {
                 logger.warn("Trying to re-register urls and re-subscribe listeners of this instance to registry...");
+                /** 第一次连，则重新注册和订阅 */
                 try {
                     ZookeeperRegistry.this.recover();
                 } catch (Exception e) {

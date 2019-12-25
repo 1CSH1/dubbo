@@ -382,6 +382,7 @@ public abstract class FailbackRegistry extends AbstractRegistry {
                 logger.info("Recover register url " + recoverRegistered);
             }
             for (URL url : recoverRegistered) {
+                /** 重新注册 */
                 addFailedRegistered(url);
             }
         }
@@ -394,6 +395,7 @@ public abstract class FailbackRegistry extends AbstractRegistry {
             for (Map.Entry<URL, Set<NotifyListener>> entry : recoverSubscribed.entrySet()) {
                 URL url = entry.getKey();
                 for (NotifyListener listener : entry.getValue()) {
+                    /** 重新订阅 */
                     addFailedSubscribed(url, listener);
                 }
             }

@@ -45,6 +45,11 @@ public class ZookeeperServiceDiscoveryChangeWatcher implements CuratorWatcher {
         this.serviceName = serviceName;
     }
 
+    /**
+     * 监听节点和子节点改变事件
+     * @param event
+     * @throws Exception
+     */
     @Override
     public void process(WatchedEvent event) throws Exception {
 
