@@ -226,16 +226,24 @@ public abstract class FailbackRegistry extends AbstractRegistry {
         return failedNotified;
     }
 
+    /**
+     * 注册，通过模板方法去调用真正的注册中心对应的方法
+     * @param url
+     */
     @Override
     public void register(URL url) {
         if (!acceptable(url)) {
             logger.info("URL " + url + " will not be registered to Registry. Registry " + url + " does not accept service of this protocol type.");
             return;
         }
+        /** 存储到本地 */
         super.register(url);
+        /** 移除掉注册失败的url */
         removeFailedRegistered(url);
+        /** 移除掉失败的未注册url */
         removeFailedUnregistered(url);
         try {
+            /** 调用注册中心子类进行注册 */
             // Sending a registration request to the server side
             doRegister(url);
         } catch (Exception e) {
@@ -255,6 +263,7 @@ public abstract class FailbackRegistry extends AbstractRegistry {
                 logger.error("Failed to register " + url + ", waiting for retry, cause: " + t.getMessage(), t);
             }
 
+            /** 记录注册失败的数据，进行重试 */
             // Record a failed registration request to a failed list, retry regularly
             addFailedRegistered(url);
         }

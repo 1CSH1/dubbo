@@ -125,6 +125,10 @@ public class ZookeeperRegistry extends FailbackRegistry {
         }
     }
 
+    /**
+     * 注册
+     * @param url
+     */
     @Override
     public void doRegister(URL url) {
         try {

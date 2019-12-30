@@ -77,25 +77,34 @@ public abstract class AbstractRegistry implements Registry {
     private static final int MAX_RETRY_TIMES_SAVE_PROPERTIES = 3;
     // Log output
     protected final Logger logger = LoggerFactory.getLogger(getClass());
+    /** 本地磁盘缓存的注册中心数据 */
     // Local disk cache, where the special key value.registries records the list of registry centers, and the others are the list of notified service providers
     private final Properties properties = new Properties();
     // File cache timing writing
     private final ExecutorService registryCacheExecutor = Executors.newFixedThreadPool(1, new NamedThreadFactory("DubboSaveRegistryCache", true));
+    /** 是否同步存储到文件 */
     // Is it synchronized to save the file
     private final boolean syncSaveFile;
     private final AtomicLong lastCacheChanged = new AtomicLong();
     private final AtomicInteger savePropertiesRetryTimes = new AtomicInteger();
+    /** 存储已注册的服务 */
     private final Set<URL> registered = new ConcurrentHashSet<>();
+    /** 存储已订阅的服务 */
     private final ConcurrentMap<URL, Set<NotifyListener>> subscribed = new ConcurrentHashMap<>();
+    /** 存储已通知的服务 */
     private final ConcurrentMap<URL, Map<String, List<URL>>> notified = new ConcurrentHashMap<>();
+    /** 注册中心的 url */
     private URL registryUrl;
+    /** 注册中心存储的本地文件 */
     // Local disk cache file
     private File file;
 
     public AbstractRegistry(URL url) {
         setUrl(url);
         // Start file save timer
+        /** 异步存储还是同步存储，默认是异步 */
         syncSaveFile = url.getParameter(REGISTRY_FILESAVE_SYNC_KEY, false);
+        /** 本地缓存的文件 */
         String defaultFilename = System.getProperty("user.home") + "/.dubbo/dubbo-registry-" + url.getParameter(APPLICATION_KEY) + "-" + url.getAddress().replaceAll(":", "-") + ".cache";
         String filename = url.getParameter(FILE_KEY, defaultFilename);
         File file = null;
@@ -108,9 +117,11 @@ public abstract class AbstractRegistry implements Registry {
             }
         }
         this.file = file;
+        /** 先从本地缓存拉取注册中心数据 */
         // When starting the subscription center,
         // we need to read the local cache file for future Registry fault tolerance processing.
         loadProperties();
+        /** 同步到备份地址 */
         notify(url.getBackupUrls());
     }
 
@@ -207,6 +218,9 @@ public abstract class AbstractRegistry implements Registry {
         }
     }
 
+    /**
+     * 拉取本地缓存的配置中心数据
+     */
     private void loadProperties() {
         if (file != null && file.exists()) {
             InputStream in = null;
@@ -276,6 +290,10 @@ public abstract class AbstractRegistry implements Registry {
         return result;
     }
 
+    /**
+     * 注册到本地
+     * @param url  Registration information , is not allowed to be empty, e.g: dubbo://10.20.153.10/org.apache.dubbo.foo.BarService?version=1.0.0&application=kylin
+     */
     @Override
     public void register(URL url) {
         if (url == null) {
@@ -287,6 +305,10 @@ public abstract class AbstractRegistry implements Registry {
         registered.add(url);
     }
 
+    /**
+     * 取消注册到本地
+     * @param url Registration information , is not allowed to be empty, e.g: dubbo://10.20.153.10/org.apache.dubbo.foo.BarService?version=1.0.0&application=kylin
+     */
     @Override
     public void unregister(URL url) {
         if (url == null) {
@@ -298,6 +320,11 @@ public abstract class AbstractRegistry implements Registry {
         registered.remove(url);
     }
 
+    /**
+     * 订阅到本地
+     * @param url      Subscription condition, not allowed to be empty, e.g. consumer://10.20.153.10/org.apache.dubbo.foo.BarService?version=1.0.0&application=kylin
+     * @param listener A listener of the change event, not allowed to be empty
+     */
     @Override
     public void subscribe(URL url, NotifyListener listener) {
         if (url == null) {
@@ -313,6 +340,11 @@ public abstract class AbstractRegistry implements Registry {
         listeners.add(listener);
     }
 
+    /**
+     * 取消订阅到本地
+     * @param url      Subscription condition, not allowed to be empty, e.g. consumer://10.20.153.10/org.apache.dubbo.foo.BarService?version=1.0.0&application=kylin
+     * @param listener A listener of the change event, not allowed to be empty
+     */
     @Override
     public void unsubscribe(URL url, NotifyListener listener) {
         if (url == null) {
@@ -330,6 +362,10 @@ public abstract class AbstractRegistry implements Registry {
         }
     }
 
+    /**
+     * 进行覆盖
+     * @throws Exception
+     */
     protected void recover() throws Exception {
         // register
         Set<URL> recoverRegistered = new HashSet<>(getRegistered());
